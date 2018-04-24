@@ -1,0 +1,15 @@
+*.db
+*.ipch
+*.opendb
+*.tmp
+*.ilk
+*.tlog
+*.idb
+*.obj
+*.xml
+*.pdb
+*.log
+*.cd
+/NegetiveTransformTest
+/x64
+/Debug
