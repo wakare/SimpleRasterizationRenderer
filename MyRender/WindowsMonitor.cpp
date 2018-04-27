@@ -76,26 +76,26 @@ LRESULT CALLBACK WindowsMonitor::WinProc(HWND hWnd, UINT message, WPARAM wParam,
 		}
 		case 0x5A://Z Press,Change SpecularOpen state.
 		{
-			if (RenderDevice::GetRenderDevice()->m_SpecularOpen == false)
-				RenderDevice::GetRenderDevice()->m_SpecularOpen = true;
+			if (RenderDevice::GetRenderDevice()->m_bSpecularOpen == false)
+				RenderDevice::GetRenderDevice()->m_bSpecularOpen = true;
 			else
-				RenderDevice::GetRenderDevice()->m_SpecularOpen = false;
+				RenderDevice::GetRenderDevice()->m_bSpecularOpen = false;
 			break;
 		}
 		case 0x58://X Press,Change PixelBasedShadingOpen state.
 		{
-			if (RenderDevice::GetRenderDevice()->m_PixelBasedShadingOpen == false)
-				RenderDevice::GetRenderDevice()->m_PixelBasedShadingOpen = true;
+			if (RenderDevice::GetRenderDevice()->m_bPixelBasedShadingOpen == false)
+				RenderDevice::GetRenderDevice()->m_bPixelBasedShadingOpen = true;
 			else
-				RenderDevice::GetRenderDevice()->m_PixelBasedShadingOpen = false;
+				RenderDevice::GetRenderDevice()->m_bPixelBasedShadingOpen = false;
 			break;
 		}
 		case 0x43://C Press,Change lightingOpen state
 		{
-			if (RenderDevice::GetRenderDevice()->m_lightingOpen == false)
-				RenderDevice::GetRenderDevice()->m_lightingOpen = true;
+			if (RenderDevice::GetRenderDevice()->m_bLightingOpen == false)
+				RenderDevice::GetRenderDevice()->m_bLightingOpen = true;
 			else
-				RenderDevice::GetRenderDevice()->m_lightingOpen = false;
+				RenderDevice::GetRenderDevice()->m_bLightingOpen = false;
 			break;
 		}
 		case VK_UP:
@@ -172,7 +172,7 @@ LRESULT CALLBACK WindowsMonitor::WinProc(HWND hWnd, UINT message, WPARAM wParam,
 			//RenderDevice::GetRenderDevice()->m_viewMatrix = camera->getViewTransformMatrix();
 			//RenderDevice::GetRenderDevice()->ClearFrameBuffer();
 			//RenderDevice::GetRenderDevice()->DrawTest();
-		RenderDevice::GetRenderDevice()->m_cameraMatrixChange = true;
+		RenderDevice::GetRenderDevice()->m_bCameraMatrixChange = true;
 			break;
 	}
 	case WM_MOUSEWHEEL:

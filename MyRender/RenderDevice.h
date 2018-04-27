@@ -30,7 +30,7 @@ private:
 	INT32* m_frameBuffer;
 	INT32* m_textureBuffer;
 
-	RenderType m_renderType;
+	RenderType m_eRenderType;
 	RenderDevice(int width, int height, RenderType renderType = RenderType::WIREFRAME);
 public:
 	int m_lightCount;
@@ -43,12 +43,12 @@ public:
 	Matrix4 m_viewMatrix;
     Light*	m_lights;
 	
-	bool m_backFaceTestOpen;
-	bool m_lightingOpen;
-	bool m_SpecularOpen;
-	bool m_PixelBasedShadingOpen;
-	bool m_fpsLock;
-	bool m_cameraMatrixChange;
+	bool m_bBackFaceTestOpen;
+	bool m_bLightingOpen;
+	bool m_bSpecularOpen;
+	bool m_bPixelBasedShadingOpen;
+	bool m_bFpsLock;
+	bool m_bCameraMatrixChange;
 
 	~RenderDevice();
 	VOID Init();

@@ -69,10 +69,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		{
 			dwNowTime = GetTickCount();
 			//Sleep(5);
-			if (renderDevice->m_cameraMatrixChange)
+			if (renderDevice->m_bCameraMatrixChange)
 			{
 				renderDevice->m_viewMatrix = renderDevice->m_mainCamera->getViewTransformMatrix();
-				renderDevice->m_cameraMatrixChange = false;
+				renderDevice->m_bCameraMatrixChange = false;
 			}
 			renderDevice->ClearFrameBuffer();
 			renderDevice->DrawTest();

@@ -1,6 +1,6 @@
 #include"graphics.h"
 
-#define GETRANGEVALUE(a,x,b) {((x)<(a))?(a):(((x)>(b))?(b):(x))}
+#define GET_RANGE_VALUE(a,x,b) {((x)<(a))?(a):(((x)>(b))?(b):(x))}
 
 Light::Light()
 {
@@ -43,7 +43,7 @@ INT32 ColorCross(INT32 color1, INT32 color2)
 }
 
 //Help:http://www.cnblogs.com/qingsunny/archive/2013/03/02/2939765.html
-INT32 calculateLighting(Material material, Vector4 position,Vector4 normalVector,Vector4 cameraPosition,INT32 baseColor, Light* lights, int lightCount,bool SpecularOpen)
+INT32 CalculateLighting(Material material, Vector4 position,Vector4 normalVector,Vector4 cameraPosition,INT32 baseColor, Light* lights, int lightCount,bool SpecularOpen)
 {
 	INT32 resultColor = 0x0;
 	int R = 0, G = 0, B = 0;
@@ -55,9 +55,9 @@ INT32 calculateLighting(Material material, Vector4 position,Vector4 normalVector
 		if ((lights + i)->type == LightType::POINTLIGHT)
 		{
 			//calculate ambient
-			R = GETRANGEVALUE(0,(baseR *(((lights + i)->Ambient & 0x00ff0000) >> 16) * ((material.Ambient & 0x00ff0000) >> 16) / (255 * 255)),255);
-			G = GETRANGEVALUE(0,(baseG *(((lights + i)->Ambient & 0x0000ff00) >> 8)  * ((material.Ambient & 0x0000ff00) >> 8) / (255 * 255)),255);
-			B = GETRANGEVALUE(0,(baseB *((lights + i)->Ambient & 0x000000ff) * (material.Ambient & 0x000000ff) / (255 * 255)),255);
+			R = GET_RANGE_VALUE(0,(baseR *(((lights + i)->Ambient & 0x00ff0000) >> 16) * ((material.Ambient & 0x00ff0000) >> 16) / (255 * 255)),255);
+			G = GET_RANGE_VALUE(0,(baseG *(((lights + i)->Ambient & 0x0000ff00) >> 8)  * ((material.Ambient & 0x0000ff00) >> 8) / (255 * 255)),255);
+			B = GET_RANGE_VALUE(0,(baseB *((lights + i)->Ambient & 0x000000ff) * (material.Ambient & 0x000000ff) / (255 * 255)),255);
 			resultColor = ColorAdd(resultColor, R, G, B);
 
 			//calculate specular.first is to get reflect vector of the vector begin with eye and end with position around normalVector.
@@ -73,9 +73,9 @@ INT32 calculateLighting(Material material, Vector4 position,Vector4 normalVector
 				if (k > 0.0f)
 				{
 					k = pow(k, material.Power);
-					R = GETRANGEVALUE(0, (int)(k * (((lights + i)->Specular & 0x00ff0000) >> 16)*((material.Specular & 0x00ff0000) >> 16) / 255), 255);
-					G = GETRANGEVALUE(0, (int)(k * (((lights + i)->Specular & 0x0000ff00) >> 8)*((material.Specular & 0x0000ff00) >> 8) / 255), 255);
-					B = GETRANGEVALUE(0, (int)(k * ((lights + i)->Specular & 0x000000ff)*(material.Specular & 0x000000ff) / 255), 255);
+					R = GET_RANGE_VALUE(0, (int)(k * (((lights + i)->Specular & 0x00ff0000) >> 16)*((material.Specular & 0x00ff0000) >> 16) / 255), 255);
+					G = GET_RANGE_VALUE(0, (int)(k * (((lights + i)->Specular & 0x0000ff00) >> 8)*((material.Specular & 0x0000ff00) >> 8) / 255), 255);
+					B = GET_RANGE_VALUE(0, (int)(k * ((lights + i)->Specular & 0x000000ff)*(material.Specular & 0x000000ff) / 255), 255);
 					resultColor = ColorAdd(resultColor, R, G, B);
 				}
 			}
@@ -83,16 +83,16 @@ INT32 calculateLighting(Material material, Vector4 position,Vector4 normalVector
 			float diffuse = lightVector*normalVector;
 			if (diffuse > 0.0f)
 			{
-				R = GETRANGEVALUE(0, (int)(baseR * diffuse * (((lights + i)->Diffuse & 0x00ff0000) >> 16) * ((material.Diffuse & 0x00ff0000) >> 16) / (255 * 255)), 255);
-				G = GETRANGEVALUE(0, (int)(baseG * diffuse * (((lights + i)->Diffuse & 0x0000ff00) >> 8) * ((material.Diffuse & 0x0000ff00) >> 8) / (255 * 255)), 255);
-				B = GETRANGEVALUE(0, (int)(baseB * diffuse * ((lights + i)->Diffuse & 0x000000ff) * (material.Diffuse & 0x000000ff) / (255 * 255)), 255);
+				R = GET_RANGE_VALUE(0, (int)(baseR * diffuse * (((lights + i)->Diffuse & 0x00ff0000) >> 16) * ((material.Diffuse & 0x00ff0000) >> 16) / (255 * 255)), 255);
+				G = GET_RANGE_VALUE(0, (int)(baseG * diffuse * (((lights + i)->Diffuse & 0x0000ff00) >> 8) * ((material.Diffuse & 0x0000ff00) >> 8) / (255 * 255)), 255);
+				B = GET_RANGE_VALUE(0, (int)(baseB * diffuse * ((lights + i)->Diffuse & 0x000000ff) * (material.Diffuse & 0x000000ff) / (255 * 255)), 255);
 				resultColor = ColorAdd(resultColor, R, G, B);
 			}
 
 			//calculate Emissive
-			R = GETRANGEVALUE(0, (int)(baseR * ((material.Emissive & 0x00ff0000) >> 16) / 255), 255);
-			G = GETRANGEVALUE(0, (int)(baseG * ((material.Emissive & 0x0000ff00) >> 8) / 255), 255);
-			B = GETRANGEVALUE(0, (int)(baseB * (material.Emissive & 0x000000ff) / 255), 255);
+			R = GET_RANGE_VALUE(0, (int)(baseR * ((material.Emissive & 0x00ff0000) >> 16) / 255), 255);
+			G = GET_RANGE_VALUE(0, (int)(baseG * ((material.Emissive & 0x0000ff00) >> 8) / 255), 255);
+			B = GET_RANGE_VALUE(0, (int)(baseB * (material.Emissive & 0x000000ff) / 255), 255);
 			resultColor = ColorAdd(resultColor, R, G, B);
 		}
 	}
@@ -151,9 +151,9 @@ INT32 colorInterpolate(INT32 startColor, INT32 endColor, float k)
 	int endG = (endColor & 0x0000ff00)>>8;
 	int endB = (endColor & 0x000000ff);
 	
-	int R = GETRANGEVALUE(0, lineInterpolate(startR, endR, k), 255);
-	int G = GETRANGEVALUE(0, lineInterpolate(startG, endG, k), 255);
-	int B = GETRANGEVALUE(0, lineInterpolate(startB, endB, k), 255);
+	int R = GET_RANGE_VALUE(0, lineInterpolate(startR, endR, k), 255);
+	int G = GET_RANGE_VALUE(0, lineInterpolate(startG, endG, k), 255);
+	int B = GET_RANGE_VALUE(0, lineInterpolate(startB, endB, k), 255);
 	
 	resultColor = (R << 16) | (G << 8) | B;
 	return resultColor;
@@ -170,7 +170,7 @@ void triangle::operator=(triangle &t)
 	material = t.material;
 }
 
-void triangle::getTriangleType(Vector4* originVector)
+void triangle::GetTriangleType(Vector4* originVector)
 {
 	//wo resort the index of three vertices.
 	if (vertices[0].position.fY > vertices[1].position.fY)

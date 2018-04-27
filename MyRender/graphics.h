@@ -63,7 +63,7 @@ public:
 	triangle(Point3D p1,Point3D p2,Point3D p3);
 	triangle() {};
 	void operator=(triangle&);
-	void getTriangleType(Vector4* originVector = NULL);
+	void GetTriangleType(Vector4* originVector = NULL);
 	void setPlaneNormalVector();
 	bool faceBackTest(Vector4 cameraPosition);
 };
@@ -106,6 +106,6 @@ public:
 };
 
 INT32 colorInterpolate(INT32 startColor, INT32 endColor, float k);
-INT32 calculateLighting(Material material, Vector4 position, Vector4 normalVector, Vector4 cameraPosition, INT32 baseColor, Light* lights, int lightCount,bool SpecularOpen);
+INT32 CalculateLighting(Material material, Vector4 position, Vector4 normalVector, Vector4 cameraPosition, INT32 baseColor, Light* lights, int lightCount,bool SpecularOpen);
 INT32 ColorAdd(INT32 src, int r, int g, int b);
 INT32 ColorCross(INT32 color1, INT32 color2);

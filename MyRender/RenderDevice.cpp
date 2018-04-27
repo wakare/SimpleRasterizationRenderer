@@ -10,12 +10,12 @@ using namespace std;
 extern float fRenderFps;
 VOID RenderDevice::SetRenderType(RenderType renderType)
 {
-	m_renderType = renderType;
+	m_eRenderType = renderType;
 }
 
 RenderType RenderDevice::GetRenderType()
 {
-	return m_renderType;
+	return m_eRenderType;
 }
 
 BOOL RenderDevice::InitFrameBuffer(int width, int height)
@@ -31,12 +31,16 @@ BOOL RenderDevice::ClearFrameBuffer()
 {
 	if (m_frameBuffer)
 		memset(m_frameBuffer, backgroundColor, sizeof(INT32)*WIDTH*HEIGHT);
+
 	if (m_zBuffer)
+	{
 		for (int i = 0; i < HEIGHT; i++)
 		{
 			for (int j = 0; j < WIDTH; j++)
 				(m_zBuffer + i*WIDTH)[j] = 1.0f;
 		}
+	}
+
 	return true;
 }
 
@@ -72,9 +76,9 @@ VOID RenderDevice::UpdateGraphics(HWND hwnd)
 	string strLightingOpen;
 	
 	// Show help tips
-	strSpecularOpen = (m_SpecularOpen)?"SpecularOpen(Z): true":"SpecularOpen(Z): false";
-	strPixelShading = (m_PixelBasedShadingOpen)?"PixelShadingOpen(X): true": "PixelShadingOpen(X): false";
-	strLightingOpen = (m_lightingOpen)?"LightingOpen(C): true": "LightingOpen(C): false";
+	strSpecularOpen = (m_bSpecularOpen)?"SpecularOpen(Z): true":"SpecularOpen(Z): false";
+	strPixelShading = (m_bPixelBasedShadingOpen)?"PixelShadingOpen(X): true": "PixelShadingOpen(X): false";
+	strLightingOpen = (m_bLightingOpen)?"LightingOpen(C): true": "LightingOpen(C): false";
 	string strControlHelps[2] = { "Translate: up/down/left/right" , "Rotate: w/a/s/d/q/e"};
 
 	HDC hDC = GetDC(hwnd);
@@ -95,7 +99,7 @@ VOID RenderDevice::UpdateGraphics(HWND hwnd)
 RenderDevice::RenderDevice(int width, int height, RenderType _renderType)
 {
 	Init();
-	m_renderType = _renderType;
+	m_eRenderType = _renderType;
 	m_frameWidth = width;
 	m_frameHeight = height;
 	if (!InitFrameBuffer(m_frameWidth, m_frameHeight)) 
@@ -133,13 +137,13 @@ VOID RenderDevice::Init()
 	m_projMatrix = NULL;
 	m_viewMatrix = NULL;
 	m_viewportMatrix = NULL;
-	m_backFaceTestOpen = true;
-	m_lightingOpen = true;
+	m_bBackFaceTestOpen = true;
+	m_bLightingOpen = true;
 	m_lightCount = 0;
-	m_SpecularOpen = false;
-	m_PixelBasedShadingOpen = false;
-	m_fpsLock = true;
-	m_cameraMatrixChange = false;
+	m_bSpecularOpen = false;
+	m_bPixelBasedShadingOpen = false;
+	m_bFpsLock = true;
+	m_bCameraMatrixChange = false;
 	m_lights = (Light*)malloc(sizeof(Light)*MAX_LIGHTCOUNTS);
 }
 
@@ -214,32 +218,31 @@ BOOL RenderDevice::IsPointOutRange(Point2D p)
 
 VOID RenderDevice::DrawTest() 
 {
-	if (m_frameBuffer) 
+	if (m_frameBuffer)
 	{
+		// TODO: Add scene manager module
+		Point3D* vertices[8];
+		vertices[0] = new Point3D(-10, -10, 20, 0.0f, 1.0f, 0x00FF0000);
+		vertices[1] = new Point3D(10, -10, 20, 1.0f, 1.0f, 0x0000FF00);
+		vertices[2] = new Point3D(10, 10, 20, 1.0f, 0.0f, 0x000000FF);
+		vertices[3] = new Point3D(-10, 10, 20, 0.0f, 0.0f, 0x00FFFFFF);
+		vertices[4] = new Point3D(-10, -10, 40, 1.0f, 1.0f, 0x00FF0000);
+		vertices[5] = new Point3D(10, -10, 40, 0.0f, 1.0f, 0x0000FF00);
+		vertices[6] = new Point3D(10, 10, 40, 0.0f, 0.0f, 0x000000FF);
+		vertices[7] = new Point3D(-10, 10, 40, 1.0f, 0.0f, 0x00FFFFFF);
+
+		Material mtrl;
+		mtrl.Ambient = 0x00FFFFFF;
+		mtrl.Diffuse = 0x00FFFFFF;
+		mtrl.Specular = 0x00FFFFFF;
+		mtrl.Emissive = 0x0;
+		mtrl.Power = 8.0f;
+		Cube cube(vertices);
+		cube.SetMaterial(mtrl);
+		DrawCube(cube);
+		for each (Point3D* p in vertices)
 		{
-			Point3D* vertices[8];
-			vertices[0] = new Point3D(-10, -10, 20, 0.0f, 1.0f, 0x00FF0000);
-			vertices[1] = new Point3D(10, -10, 20, 1.0f, 1.0f, 0x0000FF00);
-			vertices[2] = new Point3D(10, 10, 20, 1.0f, 0.0f, 0x000000FF);
-			vertices[3] = new Point3D(-10, 10, 20, 0.0f, 0.0f, 0x00FFFFFF);
-			vertices[4] = new Point3D(-10, -10, 40, 1.0f, 1.0f, 0x00FF0000);
-			vertices[5] = new Point3D(10, -10, 40, 0.0f, 1.0f, 0x0000FF00);
-			vertices[6] = new Point3D(10, 10, 40, 0.0f, 0.0f, 0x000000FF);
-			vertices[7] = new Point3D(-10, 10, 40, 1.0f, 0.0f, 0x00FFFFFF);
-			
-			Material mtrl;
-			mtrl.Ambient = 0x00FFFFFF;
-			mtrl.Diffuse = 0x00FFFFFF;
-			mtrl.Specular = 0x00FFFFFF;
-			mtrl.Emissive = 0x0;
-			mtrl.Power = 8.0f;
-			Cube cube(vertices);
-			cube.SetMaterial(mtrl);
-			DrawCube(cube);
-			for each (Point3D* p in vertices)
-			{
-				delete(p);
-			}
+			delete(p);
 		}
 	}
 }
@@ -250,10 +253,12 @@ VOID RenderDevice::DrawLine(Point2D start,Point2D end)
 	{
 		if (IsPointOutRange(start) || IsPointOutRange(end))
 		{
-			cout << "Point OutOfRange!!";
+			cout << "[ERROR] Point out of range.";
 			return;
 		}
+
 		int step;
+		// check horizontal
 		if (start.x == end.x)
 		{
 			step = (start.y > end.y) ? -1 : 1;
@@ -263,6 +268,7 @@ VOID RenderDevice::DrawLine(Point2D start,Point2D end)
 			}
 			return;
 		}
+		// normal line
 		else
 		{
 			step = (start.x > end.x) ? -1 : 1;
@@ -290,21 +296,24 @@ VOID RenderDevice::DrawLine(Point2D start,Point2D end)
 
 VOID RenderDevice::DrawTriangle(triangle tri) 
 {
+	// Save original vertex info for calculating light.
 	Vector4 originVertices[3] = 
 	{
 		tri.vertices[0].position,
 		tri.vertices[1].position,
 		tri.vertices[2].position
 	};
+
+	// World Coordination --> View Coordination.
 	triangle _tri = tri;
 	_tri.vertices[0].position *= m_viewMatrix;
 	_tri.vertices[1].position *= m_viewMatrix;
 	_tri.vertices[2].position *= m_viewMatrix;
 
-	//BackFace Test
-	if (m_backFaceTestOpen)
+	// BackFace Test
+	if (m_bBackFaceTestOpen)
 	{
-		if (m_renderType != RenderType::WIREFRAME)
+		if (m_eRenderType != RenderType::WIREFRAME)
 		{
 			_tri.setPlaneNormalVector();
 			if (!_tri.faceBackTest(m_mainCamera->position * m_viewMatrix))
@@ -312,16 +321,22 @@ VOID RenderDevice::DrawTriangle(triangle tri)
 		}
 	}
 
+	// View Matrix --> Projection Coordination.
 	_tri.vertices[0].position *= m_projMatrix;
 	_tri.vertices[1].position *= m_projMatrix;
 	_tri.vertices[2].position *= m_projMatrix;
+
+	// Use rhw (1.0f / w) to avoid division. 
 	_tri.vertices[0].rhw = 1 / _tri.vertices[0].position.fW;
 	_tri.vertices[1].rhw = 1 / _tri.vertices[1].position.fW;
 	_tri.vertices[2].rhw = 1 / _tri.vertices[2].position.fW;
+
 	_tri.vertices[0].position.Normalize();
 	_tri.vertices[1].position.Normalize();
 	_tri.vertices[2].position.Normalize();
-	//clip these outside triangle
+
+	// Clip these outside triangle.
+	// TODO: Generate subtriangles when a triangle is clipped.
 	int index = 0;
 	while (index < 3)
 	{
@@ -331,102 +346,108 @@ VOID RenderDevice::DrawTriangle(triangle tri)
 			_tri.vertices[index].position.fY > 1  ||
 			_tri.vertices[index].position.fZ < 0  ||
 			_tri.vertices[index].position.fZ > 1)
-			return;//this triangle is outside
+			return; //this triangle is outside.
 		index++;
 	}
-	//LightCalculate
-	if (m_renderType != RenderType::WIREFRAME && !m_PixelBasedShadingOpen)
+
+	// Calculate light
+	if (m_eRenderType != RenderType::WIREFRAME && !m_bPixelBasedShadingOpen)
 	{
-		if (m_lightingOpen)
+		if (m_bLightingOpen)
 		{
-			if (m_renderType == RenderType::COLOR)
+			if (m_eRenderType == RenderType::COLOR)
 			{
-				_tri.vertices[0].color = calculateLighting(_tri.material, originVertices[0], _tri.normalVector, m_mainCamera->position, _tri.vertices[0].color,
-					m_lights, m_lightCount,m_SpecularOpen);
-				_tri.vertices[1].color = calculateLighting(_tri.material, originVertices[1], _tri.normalVector, m_mainCamera->position, _tri.vertices[1].color,
-					m_lights, m_lightCount, m_SpecularOpen);
-				_tri.vertices[2].color = calculateLighting(_tri.material, originVertices[2], _tri.normalVector, m_mainCamera->position, _tri.vertices[2].color,
-					m_lights, m_lightCount, m_SpecularOpen);
+				// Calculate vertex light color.(vertex color as baseColor)
+				_tri.vertices[0].color = CalculateLighting(_tri.material, originVertices[0], _tri.normalVector, m_mainCamera->position, _tri.vertices[0].color,
+					m_lights, m_lightCount,m_bSpecularOpen);
+				_tri.vertices[1].color = CalculateLighting(_tri.material, originVertices[1], _tri.normalVector, m_mainCamera->position, _tri.vertices[1].color,
+					m_lights, m_lightCount, m_bSpecularOpen);
+				_tri.vertices[2].color = CalculateLighting(_tri.material, originVertices[2], _tri.normalVector, m_mainCamera->position, _tri.vertices[2].color,
+					m_lights, m_lightCount, m_bSpecularOpen);
 			}
-			else if (m_renderType == RenderType::TEXTURE)
+			else if (m_eRenderType == RenderType::TEXTURE)
 			{
-				_tri.vertices[0].color = calculateLighting(_tri.material, originVertices[0], _tri.normalVector, m_mainCamera->position, 0x00FFFFFF,
-					m_lights, m_lightCount, m_SpecularOpen);
-				_tri.vertices[1].color = calculateLighting(_tri.material, originVertices[1], _tri.normalVector, m_mainCamera->position, 0x00FFFFFF,
-					m_lights, m_lightCount, m_SpecularOpen);
-				_tri.vertices[2].color = calculateLighting(_tri.material, originVertices[2], _tri.normalVector, m_mainCamera->position, 0x00FFFFFF,
-					m_lights, m_lightCount, m_SpecularOpen);
+				// Calculate vertex light color.(default white as baseColor)
+				_tri.vertices[0].color = CalculateLighting(_tri.material, originVertices[0], _tri.normalVector, m_mainCamera->position, 0x00FFFFFF,
+					m_lights, m_lightCount, m_bSpecularOpen);
+				_tri.vertices[1].color = CalculateLighting(_tri.material, originVertices[1], _tri.normalVector, m_mainCamera->position, 0x00FFFFFF,
+					m_lights, m_lightCount, m_bSpecularOpen);
+				_tri.vertices[2].color = CalculateLighting(_tri.material, originVertices[2], _tri.normalVector, m_mainCamera->position, 0x00FFFFFF,
+					m_lights, m_lightCount, m_bSpecularOpen);
 			}
 		}
 	}
 
+	// Projection Coordination --> Viewport Coordination.
 	_tri.vertices[0].position *= m_viewportMatrix;
 	_tri.vertices[1].position *= m_viewportMatrix;
 	_tri.vertices[2].position *= m_viewportMatrix;
-	switch (m_renderType)
+
+	switch (m_eRenderType)
 	{
 	case RenderType::WIREFRAME:
 		DrawLine(Point2D(_tri.vertices[0].position.fX, _tri.vertices[0].position.fY), Point2D(_tri.vertices[1].position.fX, _tri.vertices[1].position.fY));
 		DrawLine(Point2D(_tri.vertices[1].position.fX, _tri.vertices[1].position.fY), Point2D(_tri.vertices[2].position.fX, _tri.vertices[2].position.fY));
 		DrawLine(Point2D(_tri.vertices[2].position.fX, _tri.vertices[2].position.fY), Point2D(_tri.vertices[0].position.fX, _tri.vertices[0].position.fY));
 		break;
+
 	case RenderType::TEXTURE:
 	case RenderType::COLOR:
 	{
-		_tri.getTriangleType(originVertices);
-		Vector4 splitOriginPOS;
+		_tri.GetTriangleType(originVertices);
+		Vector4 splitOriginPoint;
 		if (_tri.type == TriangleType::UP || _tri.type == TriangleType::DOWN)
 		{
-			if(m_PixelBasedShadingOpen)
-				DrawStandardFilledTriangle(_tri, m_renderType, originVertices);
+			if (m_bPixelBasedShadingOpen)
+				DrawStandardFilledTriangle(_tri, m_eRenderType, originVertices);
 			else
-				DrawStandardFilledTriangle(_tri, m_renderType);
+				DrawStandardFilledTriangle(_tri, m_eRenderType);
 			break;
 		}
 		else
 		{
 			float k = (_tri.vertices[1].position.fY - _tri.vertices[0].position.fY) / (_tri.vertices[2].position.fY - _tri.vertices[0].position.fY);
-			splitOriginPOS = originVertices[0] + (originVertices[2] - originVertices[0])* k;
+			splitOriginPoint = originVertices[0] + (originVertices[2] - originVertices[0])* k;
 			if (_tri.type == TriangleType::LEFT)
 			{
 				triangle upSubTriangle = triangle(_tri.vertices[0], _tri.vertices[1], _tri.VSplitPoint);
 				triangle downSubTriangle = triangle(_tri.VSplitPoint, _tri.vertices[1], _tri.vertices[2]);
-				upSubTriangle.getTriangleType();
-				downSubTriangle.getTriangleType();
+				upSubTriangle.GetTriangleType();
+				downSubTriangle.GetTriangleType();
 				upSubTriangle.material = tri.material;
 				downSubTriangle.material = tri.material;
-				Vector4 OriginUpPOS[3] = { originVertices[0],splitOriginPOS,originVertices[1] };
-				Vector4 OriginDownPOS[3] = { splitOriginPOS,originVertices[1],originVertices[2] };
-				if (m_PixelBasedShadingOpen)
+				Vector4 OriginUpPOS[3] = { originVertices[0],splitOriginPoint,originVertices[1] };
+				Vector4 OriginDownPOS[3] = { splitOriginPoint,originVertices[1],originVertices[2] };
+				if (m_bPixelBasedShadingOpen)
 				{
-					DrawStandardFilledTriangle(upSubTriangle, m_renderType, OriginUpPOS);
-					DrawStandardFilledTriangle(downSubTriangle, m_renderType, OriginDownPOS);
+					DrawStandardFilledTriangle(upSubTriangle, m_eRenderType, OriginUpPOS);
+					DrawStandardFilledTriangle(downSubTriangle, m_eRenderType, OriginDownPOS);
 				}
 				else
 				{
-					DrawStandardFilledTriangle(upSubTriangle, m_renderType);
-					DrawStandardFilledTriangle(downSubTriangle, m_renderType);
+					DrawStandardFilledTriangle(upSubTriangle, m_eRenderType);
+					DrawStandardFilledTriangle(downSubTriangle, m_eRenderType);
 				}
 			}
 			else if (_tri.type == TriangleType::RIGHT)
 			{
 				triangle upSubTriangle = triangle(_tri.vertices[0], _tri.VSplitPoint, _tri.vertices[1]);
 				triangle downSubTriangle = triangle(_tri.vertices[1], _tri.VSplitPoint, _tri.vertices[2]);
-				upSubTriangle.getTriangleType();
-				downSubTriangle.getTriangleType();
+				upSubTriangle.GetTriangleType();
+				downSubTriangle.GetTriangleType();
 				upSubTriangle.material = tri.material;
 				downSubTriangle.material = tri.material;
-				Vector4 OriginUpPOS[3] = { originVertices[0],originVertices[1],splitOriginPOS };
-				Vector4 OriginDownPOS[3] = { originVertices[1],splitOriginPOS,originVertices[2] };
-				if (m_PixelBasedShadingOpen)
+				Vector4 OriginUpPOS[3] = { originVertices[0],originVertices[1],splitOriginPoint };
+				Vector4 OriginDownPOS[3] = { originVertices[1],splitOriginPoint,originVertices[2] };
+				if (m_bPixelBasedShadingOpen)
 				{
-					DrawStandardFilledTriangle(upSubTriangle, m_renderType, OriginUpPOS);
-					DrawStandardFilledTriangle(downSubTriangle, m_renderType, OriginDownPOS);
+					DrawStandardFilledTriangle(upSubTriangle, m_eRenderType, OriginUpPOS);
+					DrawStandardFilledTriangle(downSubTriangle, m_eRenderType, OriginDownPOS);
 				}
 				else
 				{
-					DrawStandardFilledTriangle(upSubTriangle, m_renderType);
-					DrawStandardFilledTriangle(downSubTriangle, m_renderType);
+					DrawStandardFilledTriangle(upSubTriangle, m_eRenderType);
+					DrawStandardFilledTriangle(downSubTriangle, m_eRenderType);
 				}
 			}
 		}
@@ -435,15 +456,16 @@ VOID RenderDevice::DrawTriangle(triangle tri)
 	}
 }
 
-
+// Draw UP or DOWN triangle.
 VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vector4 originPosition[3]) 
 {
 	if (tri.type == TriangleType::LEFT || tri.type == TriangleType::RIGHT)
 		return;
-	int LeftX, LeftY;
-	float LeftZ, LeftRHW, LeftU, LeftV, LeftOriginX, LeftOriginY;
-	int RightX, RightY;
-	float RightZ, RightRHW, RightU, RightV, RightOriginX, RightOriginY;
+
+	int nLeftX, nLeftY;
+	float fLeftZ, fLeftRHW, fLeftU, fLeftV, fLeftOriginX, fLeftOriginY;
+	int nRightX, nRightY;
+	float fRightZ, fRightRHW, fRightU, fRightV, fRightOriginX, fRightOriginY;
 	INT32 LeftColor, RightColor;
 	Vector4 LeftNormalVector, RightNormalVector,LeftOriginPOS;
 	double scanlineRHWLength;
@@ -453,31 +475,32 @@ VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vecto
 		float k = (startY - tri.vertices[0].position.fY) / (tri.vertices[2].position.fY - tri.vertices[0].position.fY);
 		if (k > 1.00000001f || k < 0.0f)
 			continue;
+
 		if (tri.type == TriangleType::UP) {
-			LeftX = (int)(tri.vertices[0].position.fX + k * (tri.vertices[1].position.fX - tri.vertices[0].position.fX) + 0.5f);
-			LeftY = startY;
+			nLeftX = (int)(tri.vertices[0].position.fX + k * (tri.vertices[1].position.fX - tri.vertices[0].position.fX) + 0.5f);
+			nLeftY = startY;
 			if (originPosition)
 			{
-				LeftOriginX = originPosition[0].fX + k* (originPosition[1].fX - originPosition[0].fX);
-				LeftOriginY = originPosition[0].fY + k* (originPosition[1].fY - originPosition[0].fY);
+				fLeftOriginX = originPosition[0].fX + k* (originPosition[1].fX - originPosition[0].fX);
+				fLeftOriginY = originPosition[0].fY + k* (originPosition[1].fY - originPosition[0].fY);
 			}
-			RightX = (int)(tri.vertices[0].position.fX + k * (tri.vertices[2].position.fX - tri.vertices[0].position.fX) + 0.5f);
-			RightY = startY;
+			nRightX = (int)(tri.vertices[0].position.fX + k * (tri.vertices[2].position.fX - tri.vertices[0].position.fX) + 0.5f);
+			nRightY = startY;
 			if (originPosition)
 			{
-				RightOriginX = originPosition[0].fX + k* (originPosition[2].fX - originPosition[0].fX);
-				RightOriginY = originPosition[0].fY + k* (originPosition[2].fY - originPosition[0].fY);
+				fRightOriginX = originPosition[0].fX + k* (originPosition[2].fX - originPosition[0].fX);
+				fRightOriginY = originPosition[0].fY + k* (originPosition[2].fY - originPosition[0].fY);
 			}
-			LeftZ = tri.vertices[0].position.fZ + k*(tri.vertices[1].position.fZ - tri.vertices[0].position.fZ);
-			LeftRHW = tri.vertices[0].rhw + k*(tri.vertices[1].rhw - tri.vertices[0].rhw);
-			RightZ = tri.vertices[0].position.fZ + k*(tri.vertices[2].position.fZ - tri.vertices[0].position.fZ);
-			RightRHW = tri.vertices[0].rhw + k*(tri.vertices[2].rhw - tri.vertices[0].rhw);
-			scanlineRHWLength = RightRHW - LeftRHW;
+			fLeftZ = tri.vertices[0].position.fZ + k*(tri.vertices[1].position.fZ - tri.vertices[0].position.fZ);
+			fLeftRHW = tri.vertices[0].rhw + k*(tri.vertices[1].rhw - tri.vertices[0].rhw);
+			fRightZ = tri.vertices[0].position.fZ + k*(tri.vertices[2].position.fZ - tri.vertices[0].position.fZ);
+			fRightRHW = tri.vertices[0].rhw + k*(tri.vertices[2].rhw - tri.vertices[0].rhw);
+			scanlineRHWLength = fRightRHW - fLeftRHW;
 			if ((tri.vertices[1].rhw > SCANACCURACY || tri.vertices[1].rhw< -SCANACCURACY || tri.vertices[0].rhw >SCANACCURACY || tri.vertices[0].rhw < -SCANACCURACY))
 			{
 				float deltaZ1 = (1 / tri.vertices[1].rhw) - (1 / tri.vertices[0].rhw);
 				if ((scanlineRHWLength > SCANACCURACY || scanlineRHWLength < -SCANACCURACY) && (deltaZ1 > SCANACCURACY || deltaZ1 < -SCANACCURACY))
-					k = ((1 / LeftRHW) - (1 / tri.vertices[0].rhw)) / deltaZ1;
+					k = ((1 / fLeftRHW) - (1 / tri.vertices[0].rhw)) / deltaZ1;
 				else
 					k = (startY - tri.vertices[0].position.fY) / (tri.vertices[2].position.fY - tri.vertices[0].position.fY);
 			}
@@ -489,23 +512,23 @@ VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vecto
 			}
 			if (type == RenderType::TEXTURE)
 			{
-				LeftU = tri.vertices[0].tex_u + k * (tri.vertices[1].tex_u - tri.vertices[0].tex_u);
-				LeftV = tri.vertices[0].tex_v + k * (tri.vertices[1].tex_v - tri.vertices[0].tex_v);
+				fLeftU = tri.vertices[0].tex_u + k * (tri.vertices[1].tex_u - tri.vertices[0].tex_u);
+				fLeftV = tri.vertices[0].tex_v + k * (tri.vertices[1].tex_v - tri.vertices[0].tex_v);
 			}
 			LeftColor = colorInterpolate(tri.vertices[0].color, tri.vertices[1].color, k);
 			if (originPosition)
 				LeftNormalVector = tri.vertices[0].VertexNormal + (tri.vertices[1].VertexNormal - tri.vertices[0].VertexNormal) * k;
 
-			LeftOriginPOS.fX = LeftX;
-			LeftOriginPOS.fY = LeftY;
-			LeftOriginPOS.fZ = 1.0f / LeftRHW;
+			LeftOriginPOS.fX = nLeftX;
+			LeftOriginPOS.fY = nLeftY;
+			LeftOriginPOS.fZ = 1.0f / fLeftRHW;
 			LeftOriginPOS.fW = 1.0f;
 
 			if ((tri.vertices[2].rhw > SCANACCURACY || tri.vertices[2].rhw< -SCANACCURACY || tri.vertices[0].rhw >SCANACCURACY || tri.vertices[0].rhw < -SCANACCURACY))
 			{
 				float deltaZ2 = (1 / tri.vertices[2].rhw) - (1 / tri.vertices[0].rhw);
 				if ((scanlineRHWLength > SCANACCURACY || scanlineRHWLength < -SCANACCURACY) && (deltaZ2 > SCANACCURACY || deltaZ2 < -SCANACCURACY))
-					k = ((1 / RightRHW) - (1 / tri.vertices[0].rhw)) / deltaZ2;
+					k = ((1 / fRightRHW) - (1 / tri.vertices[0].rhw)) / deltaZ2;
 				else
 					k = (startY - tri.vertices[0].position.fY) / (tri.vertices[2].position.fY - tri.vertices[0].position.fY);
 			}
@@ -517,8 +540,8 @@ VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vecto
 			}
 			if (type == RenderType::TEXTURE)
 			{
-				RightU = tri.vertices[0].tex_u + k * (tri.vertices[2].tex_u - tri.vertices[0].tex_u);
-				RightV = tri.vertices[0].tex_v + k * (tri.vertices[2].tex_v - tri.vertices[0].tex_v);
+				fRightU = tri.vertices[0].tex_u + k * (tri.vertices[2].tex_u - tri.vertices[0].tex_u);
+				fRightV = tri.vertices[0].tex_v + k * (tri.vertices[2].tex_v - tri.vertices[0].tex_v);
 			}
 			RightColor = colorInterpolate(tri.vertices[0].color, tri.vertices[2].color, k);
 			if(originPosition)
@@ -527,30 +550,30 @@ VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vecto
 		}
 		else
 		{
-			LeftX = (int)(tri.vertices[0].position.fX + k * (tri.vertices[2].position.fX - tri.vertices[0].position.fX) + 0.5f);
-			LeftY = startY;
+			nLeftX = (int)(tri.vertices[0].position.fX + k * (tri.vertices[2].position.fX - tri.vertices[0].position.fX) + 0.5f);
+			nLeftY = startY;
 			if (originPosition)
 			{
-				LeftOriginX = originPosition[0].fX + k* (originPosition[2].fX - originPosition[0].fX);
-				LeftOriginY = originPosition[0].fY + k* (originPosition[2].fY - originPosition[0].fY);
+				fLeftOriginX = originPosition[0].fX + k* (originPosition[2].fX - originPosition[0].fX);
+				fLeftOriginY = originPosition[0].fY + k* (originPosition[2].fY - originPosition[0].fY);
 			}
-			LeftZ = tri.vertices[0].position.fZ + k*(tri.vertices[2].position.fZ - tri.vertices[0].position.fZ);
-			LeftRHW = tri.vertices[0].rhw + k*(tri.vertices[2].rhw - tri.vertices[0].rhw);
-			RightX = (int)(tri.vertices[1].position.fX + k * (tri.vertices[2].position.fX - tri.vertices[1].position.fX) + 0.5f);
-			RightY = startY;
+			fLeftZ = tri.vertices[0].position.fZ + k*(tri.vertices[2].position.fZ - tri.vertices[0].position.fZ);
+			fLeftRHW = tri.vertices[0].rhw + k*(tri.vertices[2].rhw - tri.vertices[0].rhw);
+			nRightX = (int)(tri.vertices[1].position.fX + k * (tri.vertices[2].position.fX - tri.vertices[1].position.fX) + 0.5f);
+			nRightY = startY;
 			if (originPosition)
 			{
-				RightOriginX = originPosition[1].fX + k* (originPosition[2].fX - originPosition[1].fX);
-				RightOriginY = originPosition[1].fY + k* (originPosition[2].fY - originPosition[1].fY);
+				fRightOriginX = originPosition[1].fX + k* (originPosition[2].fX - originPosition[1].fX);
+				fRightOriginY = originPosition[1].fY + k* (originPosition[2].fY - originPosition[1].fY);
 			}
-			RightZ = tri.vertices[1].position.fZ + k*(tri.vertices[2].position.fZ - tri.vertices[1].position.fZ);;
-			RightRHW = tri.vertices[1].rhw + k*(tri.vertices[2].rhw - tri.vertices[1].rhw);
-			scanlineRHWLength = RightRHW - LeftRHW;
+			fRightZ = tri.vertices[1].position.fZ + k*(tri.vertices[2].position.fZ - tri.vertices[1].position.fZ);;
+			fRightRHW = tri.vertices[1].rhw + k*(tri.vertices[2].rhw - tri.vertices[1].rhw);
+			scanlineRHWLength = fRightRHW - fLeftRHW;
 			if ((tri.vertices[2].rhw > SCANACCURACY || tri.vertices[2].rhw< -SCANACCURACY || tri.vertices[0].rhw >SCANACCURACY || tri.vertices[0].rhw < -SCANACCURACY))
 			{
 				float deltaZ1 = (1 / tri.vertices[2].rhw) - (1 / tri.vertices[0].rhw);
 				if ((scanlineRHWLength > SCANACCURACY || scanlineRHWLength < -SCANACCURACY) && (deltaZ1 > SCANACCURACY || deltaZ1 < -SCANACCURACY))
-					k = (1 / LeftRHW - 1 / tri.vertices[0].rhw) / deltaZ1;
+					k = (1 / fLeftRHW - 1 / tri.vertices[0].rhw) / deltaZ1;
 				else
 					k = (startY - tri.vertices[0].position.fY) / (tri.vertices[2].position.fY - tri.vertices[0].position.fY);
 			}
@@ -562,23 +585,23 @@ VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vecto
 			}
 			if (type == RenderType::TEXTURE)
 			{
-				LeftU = tri.vertices[0].tex_u + k * (tri.vertices[2].tex_u - tri.vertices[0].tex_u);
-				LeftV = tri.vertices[0].tex_v + k * (tri.vertices[2].tex_v - tri.vertices[0].tex_v);
+				fLeftU = tri.vertices[0].tex_u + k * (tri.vertices[2].tex_u - tri.vertices[0].tex_u);
+				fLeftV = tri.vertices[0].tex_v + k * (tri.vertices[2].tex_v - tri.vertices[0].tex_v);
 			}
 			LeftColor = colorInterpolate(tri.vertices[0].color, tri.vertices[2].color, k);
 			if (originPosition)
 				LeftNormalVector = tri.vertices[0].VertexNormal + (tri.vertices[2].VertexNormal - tri.vertices[0].VertexNormal) * k;
 			
-			LeftOriginPOS.fX = LeftX;
-			LeftOriginPOS.fY = LeftY;
-			LeftOriginPOS.fZ = 1.0f / LeftRHW;
+			LeftOriginPOS.fX = nLeftX;
+			LeftOriginPOS.fY = nLeftY;
+			LeftOriginPOS.fZ = 1.0f / fLeftRHW;
 			LeftOriginPOS.fW = 1.0f;
 
 			if ((tri.vertices[2].rhw > SCANACCURACY || tri.vertices[2].rhw< -SCANACCURACY || tri.vertices[1].rhw >SCANACCURACY || tri.vertices[1].rhw < -SCANACCURACY))
 			{
 				float deltaZ2 = (1 / tri.vertices[2].rhw) - (1 / tri.vertices[1].rhw);
 				if ((scanlineRHWLength > SCANACCURACY || scanlineRHWLength < -SCANACCURACY) && (deltaZ2 > SCANACCURACY || deltaZ2 < -SCANACCURACY))
-					k = ((1 / RightRHW) - (1 / tri.vertices[1].rhw)) / deltaZ2;
+					k = ((1 / fRightRHW) - (1 / tri.vertices[1].rhw)) / deltaZ2;
 				else
 					k = (startY - tri.vertices[0].position.fY) / (tri.vertices[2].position.fY - tri.vertices[0].position.fY);
 			}
@@ -590,69 +613,69 @@ VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vecto
 			}
 			if (type == RenderType::TEXTURE)
 			{
-				RightU = tri.vertices[1].tex_u + k * (tri.vertices[2].tex_u - tri.vertices[1].tex_u);
-				RightV = tri.vertices[1].tex_v + k * (tri.vertices[2].tex_v - tri.vertices[1].tex_v);
+				fRightU = tri.vertices[1].tex_u + k * (tri.vertices[2].tex_u - tri.vertices[1].tex_u);
+				fRightV = tri.vertices[1].tex_v + k * (tri.vertices[2].tex_v - tri.vertices[1].tex_v);
 			}
 			RightColor = colorInterpolate(tri.vertices[1].color, tri.vertices[2].color, k);
 			if (originPosition)
 				RightNormalVector = tri.vertices[1].VertexNormal + (tri.vertices[2].VertexNormal - tri.vertices[1].VertexNormal) * k;
 			
 		}
-		if (LeftX == RightX)
+		if (nLeftX == nRightX)
 		{
-			if (LeftX < 0 || LeftX >= WIDTH || LeftY < 0 || LeftY >= HEIGHT)
+			if (nLeftX < 0 || nLeftX >= WIDTH || nLeftY < 0 || nLeftY >= HEIGHT)
 				continue;
-			if (LeftZ < (m_zBuffer + LeftY*WIDTH)[LeftX])
+			if (fLeftZ < (m_zBuffer + nLeftY*WIDTH)[nLeftX])
 			{
 				//Depth Pass,we update the frameBuffer
-				(m_zBuffer + LeftY * WIDTH)[LeftX] = LeftZ;
+				(m_zBuffer + nLeftY * WIDTH)[nLeftX] = fLeftZ;
 				if (type == RenderType::COLOR)
 				{
-					if (originPosition && m_lightingOpen)
-						(m_frameBuffer + LeftY * WIDTH)[LeftX] = calculateLighting(tri.material, LeftOriginPOS, LeftNormalVector, m_mainCamera->position, LeftColor, m_lights, m_lightCount, m_SpecularOpen);
+					if (originPosition && m_bLightingOpen)
+						(m_frameBuffer + nLeftY * WIDTH)[nLeftX] = CalculateLighting(tri.material, LeftOriginPOS, LeftNormalVector, m_mainCamera->position, LeftColor, m_lights, m_lightCount, m_bSpecularOpen);
 					else
-						(m_frameBuffer + LeftY * WIDTH)[LeftX] = LeftColor;
+						(m_frameBuffer + nLeftY * WIDTH)[nLeftX] = LeftColor;
 				}
 				if (type == RenderType::TEXTURE)
-					if (originPosition && m_lightingOpen)
-						(m_frameBuffer + LeftY * WIDTH)[LeftX] = calculateLighting(tri.material, LeftOriginPOS, LeftNormalVector, m_mainCamera->position, GetTextureColor(LeftU, LeftV), m_lights, m_lightCount, m_SpecularOpen);
-					else if(m_lightingOpen)
-						(m_frameBuffer + LeftY * WIDTH)[LeftX] = ColorCross(GetTextureColor(LeftU, LeftV),LeftColor);
+					if (originPosition && m_bLightingOpen)
+						(m_frameBuffer + nLeftY * WIDTH)[nLeftX] = CalculateLighting(tri.material, LeftOriginPOS, LeftNormalVector, m_mainCamera->position, GetTextureColor(fLeftU, fLeftV), m_lights, m_lightCount, m_bSpecularOpen);
+					else if(m_bLightingOpen)
+						(m_frameBuffer + nLeftY * WIDTH)[nLeftX] = ColorCross(GetTextureColor(fLeftU, fLeftV),LeftColor);
 					else
-						(m_frameBuffer + LeftY * WIDTH)[LeftX] = GetTextureColor(LeftU, LeftV);
+						(m_frameBuffer + nLeftY * WIDTH)[nLeftX] = GetTextureColor(fLeftU, fLeftV);
 			}
 			continue;
 		}
-		double rhdeltaX = 1.0 / (RightX - LeftX);
+		double rhdeltaX = 1.0 / (nRightX - nLeftX);
 		double RHWStep = scanlineRHWLength * rhdeltaX;
-		double currentRHW = LeftRHW;
+		double currentRHW = fLeftRHW;
 		Vector4 currentPosition;
 		Vector4 currentNormal;
 		float _k;
 		float u, v;
 		//from LeftPoint to RightPoint,we calculate every point to update the frameBuffer
-		for (int startX = LeftX; startX <= RightX; startX++, currentRHW += RHWStep)
+		for (int startX = nLeftX; startX <= nRightX; startX++, currentRHW += RHWStep)
 		{
-			_k = (startX - LeftX) / (float)(RightX - LeftX);
+			_k = (startX - nLeftX) / (float)(nRightX - nLeftX);
 			if (originPosition)
 			{
-				float OriginX = LeftOriginX + _k * (RightOriginX - LeftOriginX);
-				float OriginY = LeftOriginY + _k * (RightOriginY - LeftOriginY);
+				float OriginX = fLeftOriginX + _k * (fRightOriginX - fLeftOriginX);
+				float OriginY = fLeftOriginY + _k * (fRightOriginY - fLeftOriginY);
 				float OriginZ = 1.0f / currentRHW;
 				currentPosition.fX = OriginX;
 				currentPosition.fY = OriginY;
 				currentPosition.fZ = OriginZ;
 				currentPosition.fW = 1.0f;
 			}
-			float z = _k*(RightZ - LeftZ) + LeftZ;
+			float z = _k*(fRightZ - fLeftZ) + fLeftZ;
 			if ((currentRHW > SCANACCURACY || currentRHW < -SCANACCURACY) && (scanlineRHWLength > SCANACCURACY || scanlineRHWLength < -SCANACCURACY))
 			{
 				double currentZ = 1.0f / currentRHW;
-				if ((RightRHW > SCANACCURACY || RightRHW < -SCANACCURACY) && (LeftRHW > SCANACCURACY || LeftRHW < -SCANACCURACY))
+				if ((fRightRHW > SCANACCURACY || fRightRHW < -SCANACCURACY) && (fLeftRHW > SCANACCURACY || fLeftRHW < -SCANACCURACY))
 				{
-					float deltaZ = (1 / RightRHW) - (1 / LeftRHW);
+					float deltaZ = (1 / fRightRHW) - (1 / fLeftRHW);
 					if (deltaZ > SCANACCURACY || deltaZ < -SCANACCURACY)
-						_k = (currentZ - (1 / LeftRHW)) / deltaZ;
+						_k = (currentZ - (1 / fLeftRHW)) / deltaZ;
 				}
 			}
 			if (originPosition)
@@ -663,13 +686,13 @@ VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vecto
 			INT32 currentColor = colorInterpolate(LeftColor, RightColor, _k);
 			if (type == RenderType::TEXTURE)
 			{
-				u = LeftU + _k*(RightU - LeftU);
-				v = LeftV + _k*(RightV - LeftV);
+				u = fLeftU + _k*(fRightU - fLeftU);
+				v = fLeftV + _k*(fRightV - fLeftV);
 			}
 			//Depth Test
 			int X = startX;
 			int Y = startY;
-			if (X < LeftX || X > RightX)
+			if (X < nLeftX || X > nRightX)
 				continue;
 			if (z < (m_zBuffer + Y * WIDTH)[X])
 			{
@@ -677,16 +700,16 @@ VOID RenderDevice::DrawStandardFilledTriangle(triangle tri,RenderType type,Vecto
 				(m_zBuffer + Y * WIDTH)[X] = z;
 				if (type == RenderType::COLOR)
 				{
-					if(originPosition && m_lightingOpen)
-						(m_frameBuffer + Y * WIDTH)[X] = calculateLighting(tri.material, currentPosition, currentNormal, m_mainCamera->position, currentColor, m_lights, m_lightCount, m_SpecularOpen);
+					if(originPosition && m_bLightingOpen)
+						(m_frameBuffer + Y * WIDTH)[X] = CalculateLighting(tri.material, currentPosition, currentNormal, m_mainCamera->position, currentColor, m_lights, m_lightCount, m_bSpecularOpen);
 					else
 						(m_frameBuffer + Y * WIDTH)[X] = currentColor;
 				}
 				if (type == RenderType::TEXTURE)
 				{
-					if (originPosition && m_lightingOpen)
-						(m_frameBuffer + Y * WIDTH)[X] = calculateLighting(tri.material, currentPosition, currentNormal, m_mainCamera->position, GetTextureColor(u, v), m_lights, m_lightCount, m_SpecularOpen);
-					else if(m_lightingOpen)
+					if (originPosition && m_bLightingOpen)
+						(m_frameBuffer + Y * WIDTH)[X] = CalculateLighting(tri.material, currentPosition, currentNormal, m_mainCamera->position, GetTextureColor(u, v), m_lights, m_lightCount, m_bSpecularOpen);
+					else if(m_bLightingOpen)
 						(m_frameBuffer + Y * WIDTH)[X] = ColorCross(GetTextureColor(u, v),currentColor);
 					else
 						(m_frameBuffer + Y * WIDTH)[X] = GetTextureColor(u, v);
